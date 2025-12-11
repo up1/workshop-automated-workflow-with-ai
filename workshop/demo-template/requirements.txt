@@ -1,0 +1,4 @@
+fastapi
+docxtpl
+pydantic
+requests
