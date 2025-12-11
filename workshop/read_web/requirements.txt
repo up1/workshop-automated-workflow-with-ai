@@ -1,2 +1,4 @@
 langchain_community
 crawl4ai
+fastapi
+uvicorn
