@@ -1,0 +1,205 @@
+{
+  "name": "My workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        -240,
+        -256
+      ],
+      "id": "4b1723f5-7070-4c93-b117-7629bc9646c7",
+      "name": "When chat message received",
+      "webhookId": "183105c7-0bcd-458a-ac05-8bb66820b8b6"
+    },
+    {
+      "parameters": {
+        "url": "https://raw.githubusercontent.com/up1/workshop-automated-workflow-with-ai/refs/heads/main/workshop/fund_list.txt",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        16,
+        0
+      ],
+      "id": "f87879c8-7451-4d92-8603-ce5ce8a9a5ab",
+      "name": "Get list of fund"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('Receive data from LINE').item.json.body.events[0].message.text }}",
+        "options": {
+          "systemMessage": "=[Instruction]\nAs an expert financial advisor, \nprovide fund recommendations based on user-defined criteria including risk level, \nfund type, investment type, and minimum annual return percentage. \nUse the fund data provided below in section [ข้อมูลกองทุน] only to match user requests accurately.\n\n\n[ข้อมูลกองทุน]\n{{ $json.data }}\n\n[Condition]\nในการถามตอบต้องได้รับข้อมูลครบถ้วน\n1. ความเสี่ยง: ต่ำ, กลาง, สูง\n2. ประเภทกองทุน: thai, other\n3. ประเภทการลงทุน: esg, non-esg\n4. ผลตอบแทนขั้นต่ำต่อปี (%): ตัวเลขจำนวนเต็ม\n\nทำการแนะนำกองทุนที่ตรงกับเงื่อนไขที่ผู้ใช้ระบุมาเท่านั้นและเมื่อผู้ใช้ระบุเงื่อนไขครบถ้วน {{ $json.data }}"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3,
+      "position": [
+        224,
+        0
+      ],
+      "id": "15c88f1f-b760-422b-a59c-262f7d8f8f33",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        144,
+        224
+      ],
+      "id": "86129a3c-e3f1-4f28-9a14-e15237b86a3f",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "0tC9qBxwFCvmHell",
+          "name": "OpenAi account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('Receive data from LINE').item.json.body.events[0].source.userId }}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        320,
+        256
+      ],
+      "id": "c19e33b1-fccf-4296-b76b-8d469f080347",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.line.me/v2/bot/message/reply",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { \"replyToken\": $('Receive data from LINE').item.json.body.events[0].replyToken, \"messages\": [ { \"type\": \"text\", \"text\": $json.output } ] } }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        624,
+        0
+      ],
+      "id": "c709e79a-2452-47fd-ad65-ed152a90963f",
+      "name": "Reply to LINE",
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "eCVcixjr75VXRcWd",
+          "name": "Bearer Auth account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "e33a403c-cdf6-488e-8625-23d30f1ca1ba",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -240,
+        0
+      ],
+      "id": "9326fca4-a7c4-4424-aca0-4dc8f95f7d98",
+      "name": "Receive data from LINE",
+      "webhookId": "e33a403c-cdf6-488e-8625-23d30f1ca1ba"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When chat message received": {
+      "main": [
+        []
+      ]
+    },
+    "Get list of fund": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Reply to LINE",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Receive data from LINE": {
+      "main": [
+        [
+          {
+            "node": "Get list of fund",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "ebf39b1a-24f0-4be2-838d-e4885f5c3c9f",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "6c8e57ceff016be733fe412426a9dd7ee93eaeffb10b1d55f5a91226c975f84c"
+  },
+  "id": "Cm7ROBVlvc4uDY4z",
+  "tags": []
+}
